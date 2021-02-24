@@ -1,7 +1,17 @@
 #include <iostream>
 #include <sys/ptrace.h>
 #include <unistd.h>
+#include <sys/personality.h>
 #include "debugger.hpp"
+
+void execute_debugee (const std::string& prog_name) {
+    if (ptrace(PTRACE_TRACEME, 0, 0, 0) < 0) {
+        std::cerr << "Error in ptrace\n";
+        return;
+    }
+    execl(prog_name.c_str(), prog_name.c_str(), nullptr);
+}
+
 
 int main(int argc, char* argv[]) {
 
@@ -18,8 +28,8 @@ int main(int argc, char* argv[]) {
 	if (pid == 0) {
 		// we're in child process
 		// exec debugee
-		ptrace(PTRACE_TRACEME, 0, nullptr, nullptr);
-		execl(prog, prog, nullptr);
+		personality(ADDR_NO_RANDOMIZE);
+		execute_debugee(prog);
 	} else if (pid >= 1) {
 		// we're in paraent process
 		// exec debugger
